@@ -1,0 +1,86 @@
+from app.unemployment import format_pct, fetch_unemployment_data
+
+
+def test_to_pct():
+
+    # it formats percent sign, and rounds to two decimal places:
+
+    assert format_pct(3.65554) == "3.66%"
+
+    result = format_pct(25.4)
+    assert result == '25.40%'
+
+
+def test_unemployment_data():
+
+    data = fetch_unemployment_data()
+
+    # it returns a list of dicts:
+    assert isinstance(data, list)
+    assert isinstance(data[0], dict)
+
+    # where each has a "date" and "value":
+    assert list(data[0].keys()) == ["date", "value"]
+
+    # and rates are formatted as floats:
+    assert isinstance(data[0]["value"], float)
+
+    # including a full history since 1948
+    assert len(data) >= 906
+    #assert data[-1]["date"] == "1948-01-01"
+    assert data[-1] == {'date': '1948-01-01', 'value': 3.4}
+7:33
+add to bottom of README:
+
+## Testing
+
+Run tests:
+
+```sh
+pytest
+```
+7:35
+updated python-app.yml file in the .github/workflows folder:
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python application
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest
+      env:
+          # set environment variable to use during testing
+          # ... using the repository secret value set securely via repo settings
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+      run: |
+        pytest
